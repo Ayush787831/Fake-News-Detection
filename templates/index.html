@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="AI-Powered Fake News Detection System utilizing Natural Language Processing and Machine Learning on the LIAR Benchmark Dataset.">
+    <title>TruthLens | AI Fake News Detection & Veracity Analysis</title>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+    
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="background-mesh"></div>
+
+    <!-- Header Navigation -->
+    <header class="app-header">
+        <div class="header-container">
+            <div class="brand-group">
+                <div class="brand-icon">
+                    <i class="fa-solid fa-shield-halved"></i>
+                </div>
+                <div class="brand-text">
+                    <h1 class="brand-title">TruthLens <span class="badge-ai">AI</span></h1>
+                    <p class="brand-subtitle">Automated Fake News & Misinformation Detector</p>
+                </div>
+            </div>
+
+            <nav class="nav-tabs" role="tablist">
+                <button class="nav-tab active" id="tab-detector" data-target="detector-view" role="tab" aria-selected="true">
+                    <i class="fa-solid fa-bolt"></i> Live Detector
+                </button>
+                <button class="nav-tab" id="tab-architecture" data-target="architecture-view" role="tab" aria-selected="false">
+                    <i class="fa-solid fa-chart-line"></i> Benchmark & Models
+                </button>
+                <button class="nav-tab" id="tab-api" data-target="api-view" role="tab" aria-selected="false">
+                    <i class="fa-solid fa-code"></i> Developer API
+                </button>
+            </nav>
+
+            <div class="header-status">
+                <span class="status-indicator"></span>
+                <span class="status-text">Model Online: <strong>Logistic Regression + TF-IDF</strong></span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content Container -->
+    <main class="main-container">
+        
+        <!-- Tab 1: Live Detector View -->
+        <section id="detector-view" class="view-panel active">
+            <div class="grid-layout">
+                
+                <!-- Left Column: Input & Controls -->
+                <div class="card glass-card input-card">
+                    <div class="card-header">
+                        <div class="card-title-group">
+                            <i class="fa-solid fa-newspaper text-accent"></i>
+                            <h2>Verify News Statement</h2>
+                        </div>
+                        <span class="info-badge">NLP n-gram Analysis</span>
+                    </div>
+
+                    <div class="presets-section">
+                        <span class="presets-label"><i class="fa-solid fa-lightbulb"></i> Try Sample Statements:</span>
+                        <div class="presets-container" id="presets-list">
+                            {% for preset in presets %}
+                            <button type="button" class="preset-chip" data-text="{{ preset.text }}">
+                                <span class="preset-tag">{{ preset.category }}</span>
+                                <span class="preset-snippet">{{ preset.text[:45] }}...</span>
+                            </button>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <form id="detection-form" class="detection-form" action="/predict" method="POST">
+                        <div class="form-group">
+                            <div class="textarea-wrapper">
+                                <textarea 
+                                    id="news-input" 
+                                    name="news" 
+                                    placeholder="Paste news headline, political statement, or article extract to analyze veracity..." 
+                                    rows="6"
+                                    required
+                                ></textarea>
+                                <div class="textarea-meta">
+                                    <span id="char-counter">0 chars</span>
+                                    <span id="word-counter">0 words</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-actions">
+                            <div class="left-actions">
+                                <button type="button" id="btn-paste" class="btn btn-secondary btn-sm" title="Paste from clipboard">
+                                    <i class="fa-solid fa-paste"></i> Paste
+                                </button>
+                                <button type="button" id="btn-clear" class="btn btn-secondary btn-sm" title="Clear input">
+                                    <i class="fa-solid fa-trash-can"></i> Clear
+                                </button>
+                            </div>
+                            <div class="right-actions">
+                                <button type="submit" id="btn-analyze" class="btn btn-primary btn-glow">
+                                    <i class="fa-solid fa-magnifying-glass"></i>
+                                    <span class="btn-text">Analyze Statement</span>
+                                    <span class="btn-spinner hidden"><i class="fa-solid fa-circle-notch fa-spin"></i></span>
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+
+                    <!-- Real-time Verification Checklist -->
+                    <div class="verification-tips">
+                        <h3><i class="fa-solid fa-circle-info"></i> How it works</h3>
+                        <div class="tips-grid">
+                            <div class="tip-item">
+                                <i class="fa-solid fa-brain"></i>
+                                <span>Trained on <strong>10,240+ verified political statements</strong> from the LIAR dataset.</span>
+                            </div>
+                            <div class="tip-item">
+                                <i class="fa-solid fa-cubes"></i>
+                                <span>Evaluates multi-word n-gram patterns (1-4 ngrams) and TF-IDF weighted relevance.</span>
+                            </div>
+                            <div class="tip-item">
+                                <i class="fa-solid fa-scale-balanced"></i>
+                                <span>Produces continuous probability scores and token-level credibility attribution.</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Column: Results & Explainable AI -->
+                <div class="card glass-card result-card" id="result-container">
+                    
+                    <!-- Default Idle State -->
+                    <div id="result-empty-state" class="empty-state">
+                        <div class="empty-icon">
+                            <i class="fa-solid fa-radar fa-beat-fade"></i>
+                        </div>
+                        <h3>Ready for Analysis</h3>
+                        <p>Enter or select a news headline on the left, then click <strong>Analyze Statement</strong> to see predictions and token attribution.</p>
+                    </div>
+
+                    <!-- Populated Result State -->
+                    <div id="result-content" class="result-content hidden">
+                        
+                        <!-- Top Verdict Banner -->
+                        <div id="verdict-banner" class="verdict-banner">
+                            <div class="verdict-icon-container" id="verdict-icon-wrap">
+                                <i id="verdict-icon" class="fa-solid"></i>
+                            </div>
+                            <div class="verdict-info">
+                                <span class="verdict-label-sub">Prediction Verdict</span>
+                                <h2 id="verdict-title" class="verdict-title">--</h2>
+                                <p id="verdict-description" class="verdict-desc">--</p>
+                            </div>
+                            <div class="verdict-confidence">
+                                <span class="conf-title">Confidence</span>
+                                <span class="conf-value" id="confidence-value">0%</span>
+                            </div>
+                        </div>
+
+                        <!-- Probability Meters -->
+                        <div class="meters-card">
+                            <h3><i class="fa-solid fa-chart-pie text-accent"></i> Probability Breakdown</h3>
+                            
+                            <div class="meter-group">
+                                <div class="meter-header">
+                                    <span class="meter-label"><i class="fa-solid fa-circle-check text-success"></i> Truth Probability</span>
+                                    <span class="meter-percent text-success" id="truth-percent">0%</span>
+                                </div>
+                                <div class="progress-track">
+                                    <div class="progress-bar bar-truth" id="truth-bar" style="width: 0%;"></div>
+                                </div>
+                            </div>
+
+                            <div class="meter-group">
+                                <div class="meter-header">
+                                    <span class="meter-label"><i class="fa-solid fa-triangle-exclamation text-danger"></i> Fake / Misleading Probability</span>
+                                    <span class="meter-percent text-danger" id="fake-percent">0%</span>
+                                </div>
+                                <div class="progress-track">
+                                    <div class="progress-bar bar-fake" id="fake-bar" style="width: 0%;"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Explainable AI: Informative Words & Signals -->
+                        <div class="explainable-section">
+                            <div class="explainable-header">
+                                <h3><i class="fa-solid fa-fingerprint text-accent"></i> Linguistic Feature Attribution</h3>
+                                <span class="badge-sub">TF-IDF & Logistic Weights</span>
+                            </div>
+                            <p class="explainable-intro">Key n-grams identified in this statement that influenced the model decision:</p>
+                            <div class="keywords-cloud" id="keywords-container">
+                                <!-- Dynamic Badges injected via JS -->
+                            </div>
+                        </div>
+
+                        <!-- Summary Meta & Actions -->
+                        <div class="result-footer">
+                            <div class="footer-meta">
+                                <span><i class="fa-regular fa-clock"></i> <span id="meta-timestamp">--</span></span>
+                                <span><i class="fa-solid fa-font"></i> <span id="meta-words">0</span> words</span>
+                            </div>
+                            <div class="footer-actions">
+                                <button type="button" class="btn btn-secondary btn-sm" id="btn-copy-result">
+                                    <i class="fa-regular fa-copy"></i> Copy Report
+                                </button>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Recent Predictions History Section -->
+            <div class="card glass-card history-section">
+                <div class="card-header">
+                    <div class="card-title-group">
+                        <i class="fa-solid fa-clock-rotate-left text-accent"></i>
+                        <h2>Session History</h2>
+                    </div>
+                    <button type="button" id="btn-clear-history" class="btn btn-secondary btn-sm">
+                        <i class="fa-solid fa-eraser"></i> Clear History
+                    </button>
+                </div>
+                <div class="history-list" id="history-container">
+                    <div class="history-empty">No statements tested yet in this session.</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Tab 2: Architecture & Performance View -->
+        <section id="architecture-view" class="view-panel hidden">
+            <div class="architecture-grid">
+                
+                <div class="card glass-card">
+                    <div class="card-header">
+                        <div class="card-title-group">
+                            <i class="fa-solid fa-layer-group text-accent"></i>
+                            <h2>Machine Learning Architecture</h2>
+                        </div>
+                    </div>
+                    <div class="pipeline-flow">
+                        <div class="flow-step">
+                            <div class="step-num">1</div>
+                            <div class="step-content">
+                                <h4>Data Ingestion & Cleaning</h4>
+                                <p>LIAR benchmark dataset (10,240 training statements). Tokenization, lowercase transformation, stopword removal, and punctuation handling.</p>
+                            </div>
+                        </div>
+                        <div class="flow-arrow"><i class="fa-solid fa-arrow-down"></i></div>
+                        <div class="flow-step">
+                            <div class="step-num">2</div>
+                            <div class="step-content">
+                                <h4>Feature Extraction & n-grams</h4>
+                                <p>TF-IDF Vectorization with unigrams, bigrams, trigrams, and 4-grams (1-4 ngram range), sublinear term frequency scaling, and IDF smoothing.</p>
+                            </div>
+                        </div>
+                        <div class="flow-arrow"><i class="fa-solid fa-arrow-down"></i></div>
+                        <div class="flow-step">
+                            <div class="step-num">3</div>
+                            <div class="step-content">
+                                <h4>Classification & Probability Calibration</h4>
+                                <p>L2 Regularized Logistic Regression (C=1.5) calibrated with softmax probabilities for continuous veracity scoring.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card glass-card">
+                    <div class="card-header">
+                        <div class="card-title-group">
+                            <i class="fa-solid fa-chart-column text-accent"></i>
+                            <h2>Model Benchmark Comparison</h2>
+                        </div>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="benchmark-table">
+                            <thead>
+                                <tr>
+                                    <th>Algorithm</th>
+                                    <th>Feature Engineering</th>
+                                    <th>F1 Score</th>
+                                    <th>Role</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr class="highlight-row">
+                                    <td><strong>Logistic Regression</strong></td>
+                                    <td>TF-IDF (1-4 ngrams)</td>
+                                    <td><span class="badge badge-success">0.671</span></td>
+                                    <td><span class="tag-active">Active Engine</span></td>
+                                </tr>
+                                <tr>
+                                    <td>Random Forest</td>
+                                    <td>CountVectorizer (200 trees)</td>
+                                    <td><span class="badge badge-info">0.702</span></td>
+                                    <td>Candidate</td>
+                                </tr>
+                                <tr>
+                                    <td>Linear SVM</td>
+                                    <td>TF-IDF (1-4 ngrams)</td>
+                                    <td><span class="badge badge-info">0.610</span></td>
+                                    <td>Evaluated</td>
+                                </tr>
+                                <tr>
+                                    <td>Multinomial Naive Bayes</td>
+                                    <td>TF-IDF (1-4 ngrams)</td>
+                                    <td><span class="badge badge-info">0.669</span></td>
+                                    <td>Evaluated</td>
+                                </tr>
+                                <tr>
+                                    <td>Passive Aggressive</td>
+                                    <td>TF-IDF (1-3 ngrams)</td>
+                                    <td><span class="badge badge-info">0.612</span></td>
+                                    <td>Secondary</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <div class="dataset-stats-box">
+                        <h4>LIAR Dataset Class Reduction Scheme:</h4>
+                        <div class="class-mapping-grid">
+                            <div class="class-map-item true-side">
+                                <span class="target-class">TRUE (Real)</span>
+                                <ul>
+                                    <li>True</li>
+                                    <li>Mostly-True</li>
+                                    <li>Half-True</li>
+                                </ul>
+                            </div>
+                            <div class="class-map-item false-side">
+                                <span class="target-class">FALSE (Fake)</span>
+                                <ul>
+                                    <li>Barely-True</li>
+                                    <li>False</li>
+                                    <li>Pants on Fire</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- Tab 3: API Documentation View -->
+        <section id="api-view" class="view-panel hidden">
+            <div class="card glass-card api-doc-card">
+                <div class="card-header">
+                    <div class="card-title-group">
+                        <i class="fa-solid fa-terminal text-accent"></i>
+                        <h2>REST API Documentation</h2>
+                    </div>
+                    <span class="tag-endpoint">POST /api/predict</span>
+                </div>
+
+                <div class="api-body">
+                    <p>Integrate TruthLens fake news detection directly into any application or workflow via JSON HTTP POST.</p>
+                    
+                    <h3>Request Payload:</h3>
+                    <pre class="code-block"><code>POST /api/predict
+Content-Type: application/json
+
+{
+  "news": "The economic turnaround started at the end of my term."
+}</code></pre>
+
+                    <h3>Response Payload:</h3>
+                    <pre class="code-block"><code>{
+  "success": true,
+  "statement": "The economic turnaround started at the end of my term.",
+  "prediction": "REAL NEWS",
+  "label": "TRUE",
+  "is_real": true,
+  "truth_probability": 64.58,
+  "fake_probability": 35.42,
+  "confidence_score": 64.6,
+  "explanations": [
+    {"word": "end term", "weight": 0.53, "direction": "real"},
+    {"word": "economic", "weight": 0.392, "direction": "real"}
+  ],
+  "metrics": {
+    "word_count": 9,
+    "character_count": 55,
+    "reading_time_sec": 3
+  },
+  "timestamp": "2026-09-26 23:30:00"
+}</code></pre>
+
+                    <h3>Quick cURL Example:</h3>
+                    <pre class="code-block"><code>curl -X POST http://127.0.0.1:5000/api/predict \
+  -H "Content-Type: application/json" \
+  -d '{"news": "Health care reform legislation mandates free surgeries."}'</code></pre>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="app-footer">
+        <div class="footer-container">
+            <p>&copy; 2026 TruthLens Fake News Detection Project. Powered by Scikit-Learn & Flask.</p>
+            <div class="footer-links">
+                <span>LIAR Benchmark Dataset</span>
+                <span>•</span>
+                <span>Natural Language Processing</span>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Notification Toast -->
+    <div id="toast" class="toast hidden"></div>
+
+    <!-- Custom JS -->
+    <script src="{{ url_for('static', filename='app.js') }}"></script>
+</body>
+</html>

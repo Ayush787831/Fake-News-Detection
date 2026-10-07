@@ -1,0 +1,29 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Run Fake News Web App (Flask)",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/app.py",
+      "console": "integratedTerminal",
+      "cwd": "${workspaceFolder}"
+    },
+    {
+      "name": "Run Prediction CLI (prediction.py)",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/prediction.py",
+      "console": "integratedTerminal",
+      "cwd": "${workspaceFolder}"
+    },
+    {
+      "name": "Train & Save Models (train_and_save_model.py)",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/train_and_save_model.py",
+      "console": "integratedTerminal",
+      "cwd": "${workspaceFolder}"
+    }
+  ]
+}
